@@ -1,0 +1,20 @@
+##fileformat=VCFv4.2
+##INFO=<ID=AC,Number=A,Type=Integer,Description="Allele count in genotypes, for each ALT allele, in the same order as listed">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Allele Frequency, for each ALT allele, in the same order as listed">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+##INFO=<ID=CAF,Number=.,Type=String,Description="An ordered, comma delimited list of allele frequencies based on 1000Genomes, starting with the reference allele followed by alternate alleles as ordered in the ALT column. Where a 1000Genomes alternate allele is not in the dbSNPs alternate allele set, the allele is added to the ALT column.  The minor allele is the second largest value in the list, and was previuosly reported in VCF as the GMAF.  This is the GMAF reported on the RefSNP and EntrezSNP pages and VariationReporter">
+##INFO=<ID=COMMON,Number=1,Type=Integer,Description="RS is a common SNP.  A common SNP is one that has at least one 1000Genomes population with a minor allele of frequency >= 1% and for which 2 or more founders contribute to that minor allele frequency.">
+##contig=<ID=chr1,length=577,assembly=miniref>
+##contig=<ID=chr2,length=9821,assembly=miniref>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr2	9000	rare-dbsnp-snp	A	C	.	.	CAF=0.999,0.001;COMMON=0
+chr2	9010	common-dbsnp-snp1	C	T	.	.	CAF=0.99,0.01;COMMON=1
+chr2	9020	common-dbsnp-snp2	A	C	.	.	CAF=0.98,0.02;COMMON=0
+chr2	9030	rare-ac-an-snp	G	A	.	.	AC=1;AN=1000
+chr2	9040	rare-af-snp	C	A	.	.	AF=0.0004815
+chr2	9050	common-ac-an-snp	C	G	.	.	AC=47;AN=1000
+chr2	9060	common-af-snp	T	C	.	.	AF=0.04
+chr2	9070	common-multiallelic	C	A,T	.	.	AC=3,18;AN=400
+chr2	9080	common-insertion	A	ACGT	.	.	AF=0.04
+chr2	9090	common-deltion	CTA	C	.	.	AF=0.04
+chr2	9100	common-mixed	CA	GG,CACACA	.	.	AF=0.04
