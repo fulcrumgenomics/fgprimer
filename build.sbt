@@ -15,7 +15,7 @@ import scoverage.ScoverageKeys._
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-// Use sbt-release to bupm the version numbers.
+// Use sbt-release to bump the version numbers.
 //
 // see: http://blog.byjean.eu/2015/07/10/painless-release-with-sbt.html
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,7 +123,6 @@ lazy val root = Project(id="fgprimer", base=file("."))
       "org.scala-lang"            %  "scala-reflect"  % scalaVersion.value,
       "org.scala-lang"            %  "scala-compiler" % scalaVersion.value,
       "com.fulcrumgenomics"       %% "fgbio"          % "1.3.0"  excludeAll(htsjdkExcludes: _*),
-//      "com.github.samtools"       %  "htsjdk"         % "2.21.2" excludeAll(htsjdkExcludes: _*),
       "com.beachape"              %% "enumeratum"     % "1.5.14",
 
       //---------- Test libraries -------------------//
