@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2021 Fulcrum Genomics
+ * Copyright (c) 2021 Fulcrum Genomics LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,22 +20,32 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- *
  */
 
-package com.fulcrumgenomics.primerdesign.offtarget
+package com.fulcrumgenomics.primerdesign
 
+import com.fulcrumgenomics.commons.util.LazyLogging
 import com.fulcrumgenomics.primerdesign.primer3.NtThermoAlign
-import com.fulcrumgenomics.primerdesign.testing.UnitSpec
 
-class PrimerDimerCheckerTest extends UnitSpec {
-  "PrimerDimerChecker" should "find some dimers" in {
-    val primers = Seq("ACACACACACACACACACAC", "CACACACACACACACACACA", "CTGACTGACTTGAGTTCGCTA", "TAGCGAACTCAAGTCAGTCAG")
-    val checker = new PrimerDimerChecker(ntthal=new NtThermoAlign())
+import java.io.Closeable
 
-    checker.coundDimers("ACACACACACACACACACAC", primers, minTm=30) shouldBe 0
-    checker.coundDimers("CACACACACACACACACACA", primers, minTm=30) shouldBe 0
-    checker.coundDimers("CTGACTGACTTGAGTTCGCTA", primers, minTm=30) shouldBe 1
-    checker.coundDimers("TAGCGAACTCAAGTCAGTCAG", primers, minTm=30) shouldBe 1
+/**
+  * Class for checking for primer dimers that wraps ntthal.
+  */
+class DimerChecker(private val ntthal: NtThermoAlign = new NtThermoAlign()) extends LazyLogging with Closeable {
+
+  /** Calculates the Tm of the worst duplex formed by the two sequences. */
+  def tmOf(s1: String, s2: String): Double = {
+    val pair = if (s1 < s2) (s1, s2) else (s2, s1)
+    ntthal.duplexTm(s1, s2)
+  }
+
+  /** Returns the count of dimers formed between the query primer and target primers. */
+  def countDimers(query: String, targets: Iterable[String], minTm: Double): Int = {
+    targets.map(t => tmOf(query, t)).count(_ >= minTm)
+  }
+
+  override def close(): Unit = {
+    this.ntthal.close()
   }
 }

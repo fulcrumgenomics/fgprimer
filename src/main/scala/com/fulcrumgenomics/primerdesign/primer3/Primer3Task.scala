@@ -40,7 +40,7 @@ sealed trait Primer3Task {
   private[primer3] def inputTags(target: Mapping, designRegion: Mapping): Map[Primer3InputTag, Any]
 }
 
-/** Picks both a left and right primer (pair). */
+/** Picks both a leftPrimerMappings and rightPrimerMappings primer (pair). */
 case object DesignPrimerPairsTask extends Primer3Task {
   override def inputTags(target: Mapping, designRegion: Mapping): Map[Primer3InputTag, Any] = Map(
     PRIMER_TASK                -> "generic",
@@ -53,7 +53,7 @@ case object DesignPrimerPairsTask extends Primer3Task {
   override val countTag: String = "PRIMER_PAIR_NUM_RETURNED"
 }
 
-/** Picks only the left primer */
+/** Picks only the leftPrimerMappings primer */
 case object DesignLeftPrimersTask extends Primer3Task {
   override def inputTags(target: Mapping, designRegion: Mapping): Map[Primer3InputTag, Any] = Map(
     PRIMER_TASK                -> "pick_primer_list",
@@ -66,7 +66,7 @@ case object DesignLeftPrimersTask extends Primer3Task {
   override val side: Option[String] = Some("LEFT")
 }
 
-/** Picks only the right primer. */
+/** Picks only the rightPrimerMappings primer. */
 case object DesignRightPrimersTask extends Primer3Task {
   override def inputTags(target: Mapping, designRegion: Mapping): Map[Primer3InputTag, Any] = {
     val start  = target.end - designRegion.start + 1

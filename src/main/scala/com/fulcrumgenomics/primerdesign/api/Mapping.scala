@@ -89,6 +89,8 @@ object Mapping {
 
 /**
   * Represents the mapping of some item (a target, a primer, an amplicon) to a genome.
+  *
+  * All coordinates are 1-based closed end, i.e. the first 10bp on a sequence would be start=1, end=10.
   */
 case class Mapping(refName: String, start: Int, end: Int, strand: Strand = Strand.Positive) extends Locatable with Ordered[Mapping] {
   assert(start >= 1, s"Start position must be >= 1. (start=$start end=$end)")

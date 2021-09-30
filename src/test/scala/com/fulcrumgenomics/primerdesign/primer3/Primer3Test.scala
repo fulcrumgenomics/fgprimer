@@ -93,7 +93,7 @@ class Primer3Test extends UnitSpec {
       })
     }
 
-    it should "design some left primers" in {
+    it should "design some leftPrimerMappings primers" in {
       val ref    = ReferenceSequenceFileFactory.getReferenceSequenceFile(genome)
       val p3     = new Primer3(genome = genome, variantLookup = VariantLookup.empty)
       val target = Mapping("chr1", 201, 250, Strand.Positive)
@@ -123,7 +123,7 @@ class Primer3Test extends UnitSpec {
       })
     }
 
-    it should "design some right primers" in {
+    it should "design some rightPrimerMappings primers" in {
       val ref    = ReferenceSequenceFileFactory.getReferenceSequenceFile(genome)
       val p3     = new Primer3(genome = genome, variantLookup = VariantLookup.empty)
       val target = Mapping("chr1", 201, 250, Strand.Positive)

@@ -67,7 +67,7 @@ object Primer3 {
 class Primer3(val executable: FilePath = Primer3.DefaultPrimer3Executable,
               val genome: PathToFasta,
               private val variantLookup: VariantLookup = VariantLookup.empty,
-             ) extends Primer3Tool with LazyLogging with Closeable {
+             ) extends Primer3Tool {
 
   /** The Primer3 process, and input and output streams. */
   private val process  = new ProcessBuilder(this.executable.toString, "-strict_tags").redirectErrorStream(true).start()

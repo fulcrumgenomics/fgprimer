@@ -34,14 +34,14 @@ import com.fulcrumgenomics.fasta.Converters._
 import com.fulcrumgenomics.fasta.{SequenceDictionary, SequenceMetadata}
 import com.fulcrumgenomics.primerdesign.api.{Mapping, Primer, PrimerLike, PrimerPair}
 import htsjdk.samtools.{SAMFileHeader, SAMReadGroupRecord}
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, OptionValues}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.nio.file.{Files, Path}
 
 /** Base class for unit and integration testing */
-trait UnitSpec extends AnyFlatSpec with Matchers {
+trait UnitSpec extends AnyFlatSpec with Matchers with OptionValues {
   // Turn down HTSJDK logging
   htsjdk.samtools.util.Log.setGlobalLogLevel(htsjdk.samtools.util.Log.LogLevel.WARNING)
 

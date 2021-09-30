@@ -24,11 +24,11 @@
 
 package com.fulcrumgenomics.primerdesign.primer3
 
-import java.nio.file.Files
-
+import java.io.Closeable
 import com.fulcrumgenomics.FgBioDef.FilePath
-import com.fulcrumgenomics.commons.io.PathUtil
+import com.fulcrumgenomics.commons.util.LazyLogging
 
-trait Primer3Tool {
+/** Trait to be implemented by any command line executable that is part of the primer3 toolkit. */
+trait Primer3Tool extends Closeable with LazyLogging {
   def executable: FilePath
 }

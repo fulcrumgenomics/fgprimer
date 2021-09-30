@@ -57,7 +57,7 @@ class PrimerPairTest extends UnitSpec with OptionValues {
   private def toAmpliconSequence(left: String, right: String, length: Int): String = {
     if (left.isEmpty || right.isEmpty) ""
     else {
-      // FIXME: does not add the left/right sequences to the amplicon
+      // FIXME: does not add the leftPrimerMappings/rightPrimerMappings sequences to the amplicon
       val bases = left.zip(right).map { case (l, r) => s"$l$r" }.mkString.take(length)
       val times = (length / bases.length) + 1
       (bases * times).take(length)
@@ -93,7 +93,7 @@ class PrimerPairTest extends UnitSpec with OptionValues {
     }
   }
 
-  it should "require that the amplicon is the left-most left-primer base to right-most right-primer base" in {
+  it should "require that the amplicon is the leftPrimerMappings-most leftPrimerMappings-primer base to rightPrimerMappings-most rightPrimerMappings-primer base" in {
     this.primerPairs.headOption.foreach { pp: PrimerPair =>
       an[Exception] should be thrownBy pp.copy(right = pp.right.copy(mapping=pp.right.mapping.copy(end=pp.right.mapping.end+1)))
       an[Exception] should be thrownBy pp.copy(amplicon = pp.amplicon.copy(end = pp.amplicon.end + 1))
@@ -166,7 +166,7 @@ class PrimerPairTest extends UnitSpec with OptionValues {
     }
   }
 
-  it should "compare based on the primer pair's left and right primers" in {
+  it should "compare based on the primer pair's leftPrimerMappings and rightPrimerMappings primers" in {
     this.primerPairs.combinations(2).foreach { case Seq(left, right) =>
       val leftCompare = Mapping.compare(left.left.mapping, right.left.mapping, this.dict)
       val expectedResult = if (leftCompare == 0) Mapping.compare(left.right.mapping, right.right.mapping, this.dict) else leftCompare

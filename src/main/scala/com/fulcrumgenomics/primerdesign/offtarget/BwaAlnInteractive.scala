@@ -87,7 +87,7 @@ object BwaAlnInteractive {
     }
   }
 
-
+  /** Represents a single hit or alignment of a sequence to a location in the genome. */
   case class Hit(chrom: String, start: Int, negative: Boolean, cigar: Cigar, edits: Int) {
     lazy val mismatches: Int = {
       import com.fulcrumgenomics.commons.CommonsDef.javaIteratorAsScalaIterator

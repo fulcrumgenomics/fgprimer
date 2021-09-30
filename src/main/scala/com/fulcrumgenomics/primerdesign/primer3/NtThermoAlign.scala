@@ -38,6 +38,7 @@ object NtThermoAlign {
   val DefaultNtThalExecutable: FilePath = Paths.get("ntthal")
 }
 
+/** Class for running ntthal to generate binding tms for pairs of short sequences. */
 class NtThermoAlign(val executable: Path                 = NtThermoAlign.DefaultNtThalExecutable,
                     monovalentMilliMolar: Option[Double] = None,
                     divalentMilliMolar: Option[Double]   = None,
@@ -49,9 +50,8 @@ class NtThermoAlign(val executable: Path                 = NtThermoAlign.Default
 
   private val commandPrefix: Seq[String] = {
     val command = new ListBuffer[Any]()
-
-    command.append(this.executable)
-    command.append("-r")
+    command += this.executable
+    command += "-r"
 
     monovalentMilliMolar.foreach { m => command.appendAll(Seq("-mv", m)) }
     divalentMilliMolar.foreach   { d => command.appendAll(Seq("-dv", d)) }
@@ -59,7 +59,7 @@ class NtThermoAlign(val executable: Path                 = NtThermoAlign.Default
     dnaNanoMolar.foreach         { d => command.appendAll(Seq("-d",  d)) }
     temperature.foreach          { t => command.appendAll(Seq("-t",  t)) }
 
-    command.map(_.toString).toList
+    command.iterator.map(_.toString).toIndexedSeq
   }
 
   /** Calculates the duplex Tm of two sequences. */
@@ -80,4 +80,7 @@ class NtThermoAlign(val executable: Path                 = NtThermoAlign.Default
       result
     }
   }
+
+  /** Currently a no-op, but may be used in future versions. */
+  override def close(): Unit = ()
 }

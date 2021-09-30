@@ -23,30 +23,22 @@
  *
  */
 
-package com.fulcrumgenomics.primerdesign.offtarget
+package com.fulcrumgenomics.primerdesign
 
-import com.fulcrumgenomics.primerdesign.api.{Mapping, Primer, PrimerPair, Strand}
+import com.fulcrumgenomics.primerdesign.primer3.NtThermoAlign
 import com.fulcrumgenomics.primerdesign.testing.UnitSpec
-import htsjdk.samtools.util.SequenceUtil
 
-/**
-  * Tests for the PCR Simulator
-  */
-class PcrSimulatorTest extends UnitSpec {
+class DimerCheckerTest extends UnitSpec {
+  "DimerChecker" should "find some dimers" in {
+    // Four primers - first two are just rotations of each other; second two are reverse complements of each other
+    val primers = IndexedSeq("AGGAGGAGGAGGAGGAGGAGG", "GAGGAGGAGGAGGAGGAGGAG", "GGAGCTGATCGCTAGCTGATA", "TATCAGCTAGCGATCAGCTCC")
+    val checker = new DimerChecker(ntthal=new NtThermoAlign())
 
-  private val ref = testResource("miniref.fa", classOf[PcrSimulator].getPackage)
+    checker.countDimers(primers.head, primers, minTm=30) shouldBe 0
+    checker.countDimers(primers(1),   primers, minTm=30) shouldBe 0
+    checker.countDimers("CCTCCTCCTCCTCCTCCTCCT", primers, minTm=30) shouldBe 2
 
-  def pp(left: String, right: String) : PrimerPair = {
-    val lp = Primer(left,  tm=65, penalty=0, Mapping("chr1", 500, 500+left.length-1,  Strand.Positive))
-    val rp = Primer(right, tm=65, penalty=0, Mapping("chr1", 750, 750+right.length-1, Strand.Negative))
-    PrimerPair(left=lp, right=rp, amplicon=Mapping("chr1", 500, 750+right.length-1), "", 85, penalty=0)
-  }
-
-  "PcrSimulator" should "find a single mapping for a primer pair" in {
-    val pcr        = new PcrSimulator(ref=ref, maxMismatches=1)
-    val primerPair = pp("GGCTAGAGTGCAGTGGTGCGATCT", SequenceUtil.reverseComplement("TACCGTGCCTGGCTGATTGCCT"))
-    val actual     = pcr.check(primerPair)
-    val expected   = PrimerOffTargetDetectorResult(primerPair, passes=true, mappings=Seq(Mapping("chr1", 781,1042)))
-    actual shouldBe expected
+    checker.countDimers(primers(2), primers, minTm=30) shouldBe 1
+    checker.countDimers(primers(3), primers, minTm=30) shouldBe 1
   }
 }

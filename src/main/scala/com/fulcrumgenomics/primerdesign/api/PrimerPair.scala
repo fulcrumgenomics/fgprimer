@@ -28,6 +28,7 @@ import com.fulcrumgenomics.FgBioDef._
 import com.fulcrumgenomics.commons.util.LazyLogging
 import com.fulcrumgenomics.fasta.SequenceDictionary
 import com.fulcrumgenomics.primerdesign.primer3.Primer3Parameters
+import com.fulcrumgenomics.util.Sequences
 import htsjdk.samtools.util.SequenceUtil
 
 object PrimerPair extends PrimerLikeCompanion[PrimerPair] {
@@ -36,7 +37,7 @@ object PrimerPair extends PrimerLikeCompanion[PrimerPair] {
     * @param b the second primer pair to compare
     * @param dict the sequence dictionary
     * @param byAmplicon true to compare based on the [[Mapping]] of the amplicon of the primer pair, otherwise use the
-    *                   [[Mapping]] of the left and right primers
+    *                   [[Mapping]] of the leftPrimerMappings and rightPrimerMappings primers
     * @return
     */
   def compare(a: PrimerPair, b: PrimerPair, dict: SequenceDictionary, byAmplicon: Boolean = true): Int = {
@@ -53,8 +54,8 @@ object PrimerPair extends PrimerLikeCompanion[PrimerPair] {
 
 /**
   * Represents a pair of primers that work together to create an amplicon.
-  * @param left  an object describing the left primer
-  * @param right an object describing the right primer
+  * @param left  an object describing the leftPrimerMappings primer
+  * @param right an object describing the rightPrimerMappings primer
   * @param amplicon a mapping to the genome that represents the region expected to be amplified
   * @param ampliconSequence the sequence of the expected amplicon
   * @param tm the melting temperature of the expected amplicon
@@ -78,7 +79,7 @@ case class PrimerPair(left: Primer,
   /** Returns the mapping for the amplicon. */
   override def mapping: Mapping = this.amplicon
 
-  /** The list of individual primers (left and right) for the pair. */
+  /** The list of individual primers (leftPrimerMappings and rightPrimerMappings) for the pair. */
   def primers: Iterator[Primer] = Iterator(left, right)
 
   /** Returns the length of the amplicon. */
@@ -98,7 +99,7 @@ case class PrimerPair(left: Primer,
   }
 
   /** The GC of the amplicon sequence in the range 0-100, or zero if there is no amplicon sequence. */
-  val gc: Double = if (this.ampliconSequence.isEmpty) 0 else SequenceUtil.calculateGc(ampliconSequence.getBytes) * 100
+  val gc: Double = if (this.ampliconSequence.isEmpty) 0 else Sequences.gcContent(this.ampliconSequence) * 100
 
   /** Returns an ID for this primer pair, using a) the optional name if present, b) the optional prefix if present or
     * c) just location information. */
@@ -108,7 +109,7 @@ case class PrimerPair(left: Primer,
     case _            => locationString
   }
 
-  /** Returns a copy of the primer pair where the left and right primer are tailed.  If either tail is the empty
+  /** Returns a copy of the primer pair where the leftPrimerMappings and rightPrimerMappings primer are tailed.  If either tail is the empty
     * string it will not be added to the respective primer.
     */
   def withTails(leftTail: String, rightTail: String): PrimerPair = {
@@ -125,11 +126,11 @@ case class PrimerPair(left: Primer,
     right      = right.withNamePrefix(prefix),
   )
 
-  /** Returns a copy of the primer pair with names assigned to the primer pair, left and right primers.
+  /** Returns a copy of the primer pair with names assigned to the primer pair, leftPrimerMappings and rightPrimerMappings primers.
     *
     * @param ppName the name for the primer pair
-    * @param lpName the name for the left primer
-    * @param rpName the name for the right primer
+    * @param lpName the name for the leftPrimerMappings primer
+    * @param rpName the name for the rightPrimerMappings primer
     * */
   def withNames(ppName: String, lpName: String, rpName: String): PrimerPair = copy(
     name = Some(ppName),
@@ -157,7 +158,7 @@ case class PrimerPair(left: Primer,
   }
 
   /**
-    * Returns a string with information about the left and right primers respectively, and the primer pair itself.
+    * Returns a string with information about the leftPrimerMappings and rightPrimerMappings primers respectively, and the primer pair itself.
     */
   override def toString: String = {
     val builder = new StringBuilder

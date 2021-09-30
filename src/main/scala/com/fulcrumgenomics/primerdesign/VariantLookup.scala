@@ -26,7 +26,7 @@ package com.fulcrumgenomics.primerdesign
 import com.fulcrumgenomics.FgBioDef._
 import com.fulcrumgenomics.commons.util.LazyLogging
 import com.fulcrumgenomics.primerdesign.api.Mapping
-import com.fulcrumgenomics.vcf.api.{Allele, VcfSource, Variant => VcfVariant}
+import com.fulcrumgenomics.vcf.api.{Allele, VcfSource, Variant}
 import htsjdk.samtools.util.OverlapDetector
 import htsjdk.variant.variantcontext.VariantContext
 
@@ -36,7 +36,7 @@ import java.text.DecimalFormat
 
 object VariantLookup {
   /** Yields an empty variant lookup. */
-  val empty = new VariantOverlapDetector(Seq.empty, 0, false)
+  val empty: VariantLookup = new VariantOverlapDetector(Seq.empty, 0, false)
 
   /** Constructs a VariantLookup that caches all variants in memory for fast lookup.  Appropriate
     * only for small VCFs. */
@@ -51,6 +51,7 @@ object VariantLookup {
                 includingMissingMafs: Boolean = false
                ): VariantLookup = new FileBasedVariantLookup(Seq(vcf), minMaf, includingMissingMafs)
 }
+
 
 /** Trait that concrete implementations [[VariantLookup]]s should extend.  Allows the retrieval of variants
   * overlapping a given genomic coordinate range, as well as filtering variants by minor allele frequency. */
@@ -71,7 +72,7 @@ abstract class VariantLookup(private val minMaf: Double, includingMissingMaf: Bo
                   end: Int,
                   maf: Double = this.minMaf,
                   includeMissingMafs: Boolean = this.includingMissingMaf
-                 ): Seq[Variant] = {
+                 ): Seq[SimpleVariant] = {
     val variants = this._query(chrom, start, end)
     if (maf <= 0) variants else {
       if (includeMissingMafs) variants.filter { variant => variant.maf.forall(_ >= maf) }
@@ -79,20 +80,24 @@ abstract class VariantLookup(private val minMaf: Double, includingMissingMaf: Bo
     }
   }
 
-  /** Converts variants from a [[VariantContext]] to a [[Variant]], filters variants based on their FILTER status, and
+  /** Converts variants from a [[VariantContext]] to a [[SimpleVariant]], filters variants based on their FILTER status, and
     * sorts by start position. */
-  protected def toVariants(variants: Iterable[VcfVariant]): Seq[Variant] = {
+  protected def toVariants(variants: Iterable[Variant]): Seq[SimpleVariant] = {
     variants
-      .filter(v => v.filters.isEmpty || v.filters == VcfVariant.PassingFilters)
-      .map(v => Variant.apply(v))
+      .filter(v => v.filters.isEmpty || v.filters == Variant.PassingFilters)
+      .map(v => SimpleVariant.apply(v))
       .toSeq
       .sortWith((a, b) => a.pos <= b.pos)
   }
 
   /** All classes should implement this method. */
-  protected def _query(chrom: String, start:Int, end: Int): Seq[Variant]
+  protected def _query(chrom: String, start:Int, end: Int): Seq[SimpleVariant]
 }
 
+
+/**
+  * Implementation of VariantLookup that queries against indexed VCF files each time a query is performed.
+  */
 class FileBasedVariantLookup(private val vcfs: Seq[PathToVcf], minMaf: Double, includeMissingMafs: Boolean)
   extends VariantLookup(minMaf, includeMissingMafs) with Closeable with LazyLogging {
   private val readers = vcfs.map(vcf => VcfSource(vcf)).toIndexedSeq
@@ -100,7 +105,7 @@ class FileBasedVariantLookup(private val vcfs: Seq[PathToVcf], minMaf: Double, i
   /**
     * Queries variants from the VCFs used by this lookup, sorts the results and returns them as a List
     */
-  protected def _query(chrom: String, start:Int, end: Int): Seq[Variant] = {
+  protected def _query(chrom: String, start:Int, end: Int): Seq[SimpleVariant] = {
     // Log some warnings if we get queries for chromosome names we don't support
     readers.zip(vcfs).foreach { case (reader, vcf) =>
       if (reader.header.dict.get(chrom).isEmpty)
@@ -122,8 +127,8 @@ class FileBasedVariantLookup(private val vcfs: Seq[PathToVcf], minMaf: Double, i
   */
 class VariantOverlapDetector(private val vcfs: Seq[PathToVcf], minMaf: Double, includeMissingMafs: Boolean)
   extends VariantLookup(minMaf, includeMissingMafs) with LazyLogging {
-  private val detector: OverlapDetector[Variant] = {
-    val d = new OverlapDetector[Variant](0, 0)
+  private val detector: OverlapDetector[SimpleVariant] = {
+    val d = new OverlapDetector[SimpleVariant](0, 0)
     vcfs.foreach { vcf =>
       val reader = VcfSource(vcf)
       toVariants(reader).foreach { v => d.addLhs(v, v.toMapping)}
@@ -132,7 +137,7 @@ class VariantOverlapDetector(private val vcfs: Seq[PathToVcf], minMaf: Double, i
     d
   }
 
-  protected def _query(chrom: String, start:Int, end: Int): Seq[Variant] = {
+  protected def _query(chrom: String, start:Int, end: Int): Seq[SimpleVariant] = {
     this.detector.getOverlaps(new Mapping(chrom, start, end)).toSeq
   }
 
@@ -141,13 +146,13 @@ class VariantOverlapDetector(private val vcfs: Seq[PathToVcf], minMaf: Double, i
 
 
 /**
-  * Companion object for the Variant class with various useful helper methods.
+  * Companion object for the SimpleVariant class with various useful helper methods.
   */
-object Variant {
+object SimpleVariant {
   private val mafFormatter = new DecimalFormat("0.000")
 
-  /** Constructs a simplified Variant object from a VCF Variant. */
-  def apply(variant: VcfVariant): Variant = {
+  /** Constructs a simplified SimpleVariant object from a VCF SimpleVariant. */
+  def apply(variant: Variant): SimpleVariant = {
     // Inner function to determine the minor allele frequency of a VariantContext
     val maf = {
       if (variant.attrs.contains("CAF")) {
@@ -168,7 +173,7 @@ object Variant {
       }
     }
 
-    new Variant(
+    new SimpleVariant(
       id    = variant.id.getOrElse(s"${variant.chrom}:${variant.pos}"),
       chrom = variant.chrom,
       pos   = variant.pos,
@@ -179,7 +184,7 @@ object Variant {
   }
 }
 
-/** The type of variant for [[Variant]]. */
+/** The type of variant for [[SimpleVariant]]. */
 object VariantType extends Enumeration {
   val Snp, Insertion, Deletion, Other = Value
 }
@@ -190,12 +195,12 @@ object VariantType extends Enumeration {
   *
   * @param id the id or name of the variant
   * @param chrom the chromosome on which the variant resides
-  * @param pos the position of the variant (or in the case of indels, the base to the left of the variant)
+  * @param pos the position of the variant (or in the case of indels, the base to the leftPrimerMappings of the variant)
   * @param ref the reference allele
   * @param alt the single alternative allele
   * @param maf the minor allele frequency if available
   */
-case class Variant(id: String, chrom: String, pos: Int, ref: String, alt: String, maf:Option[Double]) {
+case class SimpleVariant(id: String, chrom: String, pos: Int, ref: String, alt: String, maf:Option[Double]) {
 
   /** Returns the type of variant represented by this object. */
   val variantType: VariantType.Value = {
@@ -209,7 +214,7 @@ case class Variant(id: String, chrom: String, pos: Int, ref: String, alt: String
     * Creates a compact String representation of the variant that includes all relevant information.
     */
   override def toString: String = {
-    val mafString = maf.map(Variant.mafFormatter.format).getOrElse("na")
+    val mafString = maf.map(SimpleVariant.mafFormatter.format).getOrElse("na")
     s"${id}@${chrom}:${pos}[${ref}/${alt} ${mafString}]"
   }
 
