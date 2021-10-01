@@ -27,7 +27,7 @@ package com.fulcrumgenomics.primerdesign.offtarget
 import com.fulcrumgenomics.FgBioDef.{FilePath, PathToFasta, unreachable}
 import com.fulcrumgenomics.commons.util.Logger
 import com.fulcrumgenomics.fasta.{SequenceDictionary, Topology}
-import com.fulcrumgenomics.primerdesign.api.{Mapping, PrimerPair}
+import com.fulcrumgenomics.primerdesign.api.{Mapping, Primer, PrimerPair}
 import com.fulcrumgenomics.primerdesign.offtarget.BwaAlnInteractive.Query
 import com.fulcrumgenomics.primerdesign.offtarget.OffTargetResult.NoMappings
 import com.fulcrumgenomics.util.ProgressLogger
@@ -95,7 +95,6 @@ class OffTargetDetector(val bwaExecutable: FilePath = BwaAlnInteractive.DefaultB
                         val logger: Option[Logger] = None
                   ) extends Closeable {
 
-  private val dict = SequenceDictionary.extract(ref)
   private val primerCache: mutable.Map[String, BwaAlnInteractive.Result] = mutable.HashMap()
   private val primerPairCache: mutable.Map[PrimerPair, OffTargetResult] = mutable.HashMap()
 
@@ -109,6 +108,16 @@ class OffTargetDetector(val bwaExecutable: FilePath = BwaAlnInteractive.DefaultB
     maxMismatches       = maxMismatches,
     maxHits             = maxPrimerHits
   )
+
+
+  /** Filters an iterable of Primers to return only those that have less than `maxPrimerHits` mappings
+   * to the genome.
+   */
+  def filter(ps: Iterable[Primer]): Iterable[Primer] = {
+    val results = mappingsOf(ps)
+    ps.filter(p => results(p.bases).hitCount <= this.maxPrimerHits)
+  }
+
 
   /** Checks a PrimerPair for off-target sites in the genome at which it might amplify. */
   def check(pp: PrimerPair): OffTargetResult = {
@@ -141,31 +150,15 @@ class OffTargetDetector(val bwaExecutable: FilePath = BwaAlnInteractive.DefaultB
 
     // Then handle any cache misses
     if (primerPairResults.size < pps.size) {
-      // Get the primers to map
-      val primersToMap = primerPairsToMap
-        .flatMap { pp => Seq(pp.left.bases, pp.right.bases) }
-        .toSet
-        .toSeq
-        .filterNot(b => cacheResults && this.primerCache.contains(b))
+      // Get mappings of all the primers
+      val hitsByPrimer = mappingsOf(primerPairsToMap.flatMap(_.primers))
 
-      // Build the unique list of queries to map with BWA
-      val queries: Seq[Query] = primersToMap.map(bases => Query(id=bases, bases=bases))
-
-      // Map the queries with BWA
-      logger.foreach(_.info(f"Mapping ${queries.size}%,d queries."))
-      val hitsByPrimer: Map[String, BwaAlnInteractive.Result] = this.bwa.map(queries).map(r => r.query.id -> r).toMap
-      logger.foreach(_.info(f"Mapped ${hitsByPrimer.size}%,d queries."))
-      if (cacheResults) this.primerCache ++= hitsByPrimer
-
-      // Gets the mapping results for a single primer, looking in the cache first, otherwise in the results from BWA
-      def getPrimerResult(bases: String): BwaAlnInteractive.Result = if (cacheResults) this.primerCache(bases) else hitsByPrimer(bases)
-
-      // Go through all the primer pairs that need to be mapped
+      // Go through all the primer pairs that need to be mapped/checked
       val progress = logger.map(ProgressLogger(_, noun="primer pairs", unit=1e6.toInt))
       val numPassing = primerPairsToMap.count { pp =>
         // Get the mappings for the leftPrimerMappings and rightPrimerMappings primer respectively
-        val p1: BwaAlnInteractive.Result = getPrimerResult(pp.left.bases)
-        val p2: BwaAlnInteractive.Result = getPrimerResult(pp.right.bases)
+        val p1: BwaAlnInteractive.Result = hitsByPrimer(pp.left.bases)
+        val p2: BwaAlnInteractive.Result = hitsByPrimer(pp.right.bases)
         // Get all possible amplicons from the leftPrimerMappings and rightPrimerMappings primer hits, filtering if there are too many for either
         val result = if (p1.hitCount > maxPrimerHits || p2.hitCount > maxPrimerHits) {
           OffTargetResult(primerPair=pp, passes=false, mappings=Nil)
@@ -191,6 +184,27 @@ class OffTargetDetector(val bwaExecutable: FilePath = BwaAlnInteractive.DefaultB
     }
 
     primerPairResults.toMap
+  }
+
+  /** Function to take a set of primers and map any that are not cached, and return mappings for all of them. */
+  private def mappingsOf(ps: Iterable[Primer]): Map[String, BwaAlnInteractive.Result] = {
+      // Filter out primers that have already been mapped
+      val primersToMap = ps.toSet.toSeq.filterNot(p => cacheResults && this.primerCache.contains(p.bases))
+
+      // Build the unique list of queries to map with BWA
+      val queries: Seq[Query] = primersToMap.map(p => Query(id=p.bases, bases=p.bases))
+
+      // Map the queries with BWA
+      logger.foreach(_.info(f"Mapping ${queries.size}%,d queries."))
+      val hitsByPrimer: Map[String, BwaAlnInteractive.Result] = this.bwa.map(queries).map(r => r.query.id -> r).toMap
+      logger.foreach(_.info(f"Mapped ${hitsByPrimer.size}%,d queries."))
+      if (cacheResults) {
+        this.primerCache ++= hitsByPrimer
+        ps.map(p => p.bases -> this.primerCache(p.bases)).toMap
+      }
+      else {
+        hitsByPrimer
+      }
   }
 
   /** Takes a set of hits for a one or more left primers and right primers and constructs Amplicon mappings anywhere
