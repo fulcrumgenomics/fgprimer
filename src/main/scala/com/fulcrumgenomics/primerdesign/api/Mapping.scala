@@ -49,8 +49,8 @@ object Strand extends FgBioEnum[Strand] {
 
   override def values: immutable.IndexedSeq[Strand] = findValues
 
-  def fromSymbol(sybmol: Char): Strand = this.values.find(_.symbol == sybmol).getOrElse {
-    throw new IllegalArgumentException("Not a recognized strand symbol: " + sybmol)
+  def fromSymbol(symbol: Char): Strand = this.values.find(_.symbol == symbol).getOrElse {
+    throw new IllegalArgumentException("Not a recognized strand symbol: " + symbol)
   }
 }
 
