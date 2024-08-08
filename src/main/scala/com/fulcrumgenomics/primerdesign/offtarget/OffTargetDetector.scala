@@ -168,7 +168,7 @@ class OffTargetDetector(val bwaExecutable: FilePath = BwaAlnInteractive.DefaultB
 
           OffTargetResult(
             primerPair          = pp,
-            passes              = amps.lengthCompare(maxPrimerPairHits) <= 0,
+            passes              = amps.nonEmpty && amps.lengthCompare(maxPrimerPairHits) <= 0,
             mappings            = if (keepMappings) amps else Seq.empty,
             leftPrimerMappings  = if (keepPrimerMappings) p1.hits.map(hitToMapping) else Seq.empty,
             rightPrimerMappings = if (keepPrimerMappings) p2.hits.map(hitToMapping) else Seq.empty
