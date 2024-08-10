@@ -166,13 +166,19 @@ class OffTargetDetector(val bwaExecutable: FilePath = BwaAlnInteractive.DefaultB
         else {
           val amps = toAmplicons(p1.hits, p2.hits, this.maxAmpliconSize)
 
-          OffTargetResult(
-            primerPair          = pp,
-            passes              = amps.lengthCompare(maxPrimerPairHits) <= 0,
-            mappings            = if (keepMappings) amps else Seq.empty,
-            leftPrimerMappings  = if (keepPrimerMappings) p1.hits.map(hitToMapping) else Seq.empty,
-            rightPrimerMappings = if (keepPrimerMappings) p2.hits.map(hitToMapping) else Seq.empty
-          )
+          // In some cases, when map left and right primers independently and they multi-map, sometimes `bwa` may not return a mapping to the
+          // "on-target" (designed) location, and if none of the other combinations generate ("amplifiable") amplicons, then there are no
+          // off-target amplicons.  In such a case, we return an empty OffTargetResult
+          if (amps.isEmpty) OffTargetResult(primerPair=pp, passes=false, mappings=Nil)
+          else {
+            OffTargetResult(
+              primerPair          = pp,
+              passes              = amps.lengthCompare(maxPrimerPairHits) <= 0,
+              mappings            = if (keepMappings) amps else Seq.empty,
+              leftPrimerMappings  = if (keepPrimerMappings) p1.hits.map(hitToMapping) else Seq.empty,
+              rightPrimerMappings = if (keepPrimerMappings) p2.hits.map(hitToMapping) else Seq.empty
+            )
+          }
         }
 
         progress.foreach(_.record())
