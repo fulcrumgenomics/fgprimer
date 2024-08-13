@@ -32,7 +32,6 @@ import htsjdk.samtools.util.{LineReader, StringUtil}
 
 import java.io._
 import java.nio.file.Paths
-import java.util.Collections
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -69,21 +68,12 @@ object BwaAlnInteractive {
       * @param negative whether the hit is on the negative strand
       * @param cigar the cigar string returned by BWA
       * @param edits the number of edits between the read and the reference
-      * @param rc whether the reverse-complement of the query sequence was fed to BWA, in which case various
-      *           fields should be negated/reversed in the Hit
+      * @param rc whether the reverse-complement of the query sequence was fed to BWA, in which case strand should be
+     *           negated
       * @return A Hit that represents the mapping of the original query sequence that was supplied
       */
     def apply(chrom: String, start: Int, negative: Boolean, cigar: String, edits: Int, rc:Boolean=false): Hit = {
-      val (strand, cig) = if (rc) {
-        val elems = new java.util.ArrayList(TextCigarCodec.decode(cigar).getCigarElements)
-        Collections.reverse(elems)
-        (!negative, new Cigar(elems))
-      }
-      else {
-        (negative, TextCigarCodec.decode(cigar))
-      }
-
-      new Hit(chrom=chrom, start=start, negative=strand, cigar=cig, edits=edits)
+      new Hit(chrom=chrom, start=start, negative=negative != rc, cigar=TextCigarCodec.decode(cigar), edits=edits)
     }
   }
 
