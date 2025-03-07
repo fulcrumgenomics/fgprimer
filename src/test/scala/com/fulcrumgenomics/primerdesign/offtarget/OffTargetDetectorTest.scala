@@ -54,7 +54,7 @@ class OffTargetDetectorTest extends UnitSpec {
     )
     val primerPair = pp("GGCTAGAGTGCAGTGGTGCGATCT", SequenceUtil.reverseComplement("TACCGTGCCTGGCTGATTGCCT"))
     val actual     = pcr.check(primerPair)
-    val expected   = OffTargetResult(primerPair, passes=true, mappings=Seq(Mapping("chr1", 781,1042)))
+    val expected   = OffTargetResult(primerPair, passes=true, mappings=Seq(Mapping("chr1", 781, 1042)))
     actual shouldBe expected
   }
 }
